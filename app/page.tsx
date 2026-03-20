@@ -1,287 +1,277 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
-/* ── DATA ── */
+/* ══ DATA ══════════════════════════════════════════ */
 const PROJECTS = [
-  {
-    name: "IsItAI",
-    status: "Live" as const,
-    year: "2025",
-    desc: "Five-layer forensic AI image detection. Model ensembles, EXIF forensics, FFT frequency analysis, face/skin heuristics, and dimension analysis — all in the browser.",
-    tags: ["Next.js", "AI/ML", "Vercel"],
-    live: "https://isitai-gilt.vercel.app",
-    github: "https://github.com/Ali2191",
-  },
-  {
-    name: "Learnify",
-    status: "In Progress" as const,
-    year: "2025",
-    desc: "AI-powered exam prep for Pakistani students. Covers NUST NET, FAST NAT-ICS, MDCAT — with adaptive practice questions and spaced repetition.",
-    tags: ["Next.js 14", "Supabase", "Gemini API"],
-    live: null,
-    github: "https://github.com/Ali2191",
-  },
-  {
-    name: "Pakistan Resume Builder",
-    status: "Built" as const,
-    year: "2024",
-    desc: "Full-stack resume builder with ATS scoring, AI bullet writer, cover letter generation, and four templates designed for the Pakistani job market.",
-    tags: ["React", "Claude API", "PDF Generation"],
-    live: null,
-    github: "https://github.com/Ali2191",
-  },
-  {
-    name: "UniDash",
-    status: "In Progress" as const,
-    year: "2025",
-    desc: "Unified productivity app for students. Gmail, Google Calendar, and Tasks in one mobile interface — built with React Native and Expo.",
-    tags: ["React Native", "Expo", "Google APIs"],
-    live: null,
-    github: "https://github.com/Ali2191",
-  },
+  { num:"01", name:"IsItAI", status:"Live" as const,
+    desc:"Five-layer forensic AI image detection — model ensembles, EXIF forensics, FFT analysis, face/skin heuristics.",
+    tags:["Next.js","AI/ML","Vercel"], live:"https://isitai-gilt.vercel.app", github:"https://github.com/Ali2191" },
+  { num:"02", name:"Learnify", status:"In Progress" as const,
+    desc:"AI exam-prep platform for Pakistani students — NUST NET, FAST NAT-ICS, MDCAT. Adaptive quizzes + spaced repetition.",
+    tags:["Next.js 14","Supabase","Gemini API"], live:null, github:"https://github.com/Ali2191" },
+  { num:"03", name:"Pakistan Resume Builder", status:"Built" as const,
+    desc:"ATS scoring, AI bullet writer, cover letter generator, four templates tailored to the Pakistani job market.",
+    tags:["React","Claude API","PDF"], live:null, github:"https://github.com/Ali2191" },
+  { num:"04", name:"UniDash", status:"In Progress" as const,
+    desc:"Unified Gmail + Calendar + Tasks mobile app for students. React Native + Expo with Google OAuth.",
+    tags:["React Native","Expo","Google APIs"], live:null, github:"https://github.com/Ali2191" },
 ];
 
-const SKILLS = {
-  "Languages":    ["Python", "JavaScript", "TypeScript", "HTML", "CSS"],
-  "Frontend":     ["Next.js", "React", "React Native", "Tailwind CSS"],
-  "Backend & DB": ["Supabase", "Node.js", "REST APIs", "PostgreSQL"],
-  "AI & Tools":   ["Gemini API", "Claude API", "n8n", "Vercel"],
-  "Design":       ["Figma", "Adobe Express", "CapCut"],
-};
-
-const MARQUEE_ITEMS = [
-  "Full-Stack Developer", "AI Builder", "CS Student",
-  "Next.js", "Supabase", "Open to Work",
-  "Full-Stack Developer", "AI Builder", "CS Student",
-  "Next.js", "Supabase", "Open to Work",
+const TIMELINE = [
+  { role:"Full-Stack Developer", company:"Self-employed", years:"2024 — Present" },
+  { role:"CS Student", company:"FAST University (NAT-ICS prep)", years:"2025 — Present" },
+  { role:"Customer Service Specialist", company:"IBEX · Amazon Campaign", years:"2023 — 2024" },
+  { role:"Graphic Designer", company:"Freelance", years:"2022 — 2023" },
 ];
 
-const LANG_COLORS: Record<string, string> = {
-  TypeScript: "#3178c6", JavaScript: "#f0db4f",
-  Python: "#4B8BBE", CSS: "#7b5ea7", HTML: "#e44d26",
+const SKILLS: Record<string,string[]> = {
+  "Languages":    ["Python","JavaScript","TypeScript","HTML","CSS"],
+  "Frontend":     ["Next.js","React","React Native","Tailwind CSS"],
+  "Backend & DB": ["Supabase","Node.js","REST APIs","PostgreSQL"],
+  "AI & Tools":   ["Gemini API","Claude API","n8n","Vercel"],
+  "Design":       ["Figma","Adobe Express","CapCut"],
 };
 
-/* ── CURSOR ── */
+const LANG_COLORS: Record<string,string> = {
+  TypeScript:"#3178c6", JavaScript:"#f0db4f", Python:"#4B8BBE",
+  CSS:"#7b5ea7", HTML:"#e44d26",
+};
+
+/* ══ CURSOR ════════════════════════════════════════ */
 function Cursor() {
   const dot  = useRef<HTMLDivElement>(null);
   const ring = useRef<HTMLDivElement>(null);
-  const pos  = useRef({ rx: 0, ry: 0 });
+  const lx   = useRef(0); const ly = useRef(0);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
     if (window.matchMedia("(pointer:coarse)").matches) return;
-
-    const onMove = (e: MouseEvent) => {
-      if (dot.current) {
-        dot.current.style.left = e.clientX + "px";
-        dot.current.style.top  = e.clientY + "px";
-      }
-      pos.current = { rx: pos.current.rx + (e.clientX - pos.current.rx) * 0.13,
-                      ry: pos.current.ry + (e.clientY - pos.current.ry) * 0.13 };
-    };
-
     let raf: number;
+
+    const move = (e: MouseEvent) => {
+      if (dot.current) { dot.current.style.left=e.clientX+"px"; dot.current.style.top=e.clientY+"px"; }
+      lx.current += (e.clientX - lx.current) * 0.12;
+      ly.current += (e.clientY - ly.current) * 0.12;
+    };
     const loop = () => {
-      if (ring.current) {
-        ring.current.style.left = pos.current.rx + "px";
-        ring.current.style.top  = pos.current.ry + "px";
-      }
+      if (ring.current) { ring.current.style.left=lx.current+"px"; ring.current.style.top=ly.current+"px"; }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
 
-    window.addEventListener("mousemove", onMove);
-    return () => { window.removeEventListener("mousemove", onMove); cancelAnimationFrame(raf); };
+    const addLink  = () => ring.current?.classList.add("link-hover");
+    const rmLink   = () => ring.current?.classList.remove("link-hover");
+    const addCard  = () => ring.current?.classList.add("card-hover");
+    const rmCard   = () => ring.current?.classList.remove("card-hover");
+
+    const bind = () => {
+      document.querySelectorAll("a,button,.nav-cta").forEach(el => {
+        el.addEventListener("mouseenter", addLink);
+        el.addEventListener("mouseleave", rmLink);
+      });
+      document.querySelectorAll(".project-item,.repo-card").forEach(el => {
+        el.addEventListener("mouseenter", addCard);
+        el.addEventListener("mouseleave", rmCard);
+      });
+    };
+    window.addEventListener("mousemove", move);
+    setTimeout(bind, 600);
+    return () => { window.removeEventListener("mousemove", move); cancelAnimationFrame(raf); };
   }, []);
 
   return (
     <>
-      <div ref={dot}  className="cur-dot"  style={{ position:"fixed", pointerEvents:"none" }} />
-      <div ref={ring} className="cur-ring" style={{ position:"fixed", pointerEvents:"none" }} />
+      <div ref={dot}  className="cur-dot"  style={{position:"fixed",pointerEvents:"none"}} />
+      <div ref={ring} className="cur-ring" style={{position:"fixed",pointerEvents:"none"}}>
+        <span className="cur-label">View</span>
+      </div>
     </>
   );
 }
 
-/* ── NAV ── */
-function Nav({ active }: { active: string }) {
-  const [solid, setSolid] = useState(false);
+/* ══ NAVBAR ════════════════════════════════════════ */
+function Navbar({ active }: { active: string }) {
+  const links = ["about","projects","skills","contact"];
+  const [hasPhoto, setHasPhoto] = useState(false);
   useEffect(() => {
-    const fn = () => setSolid(window.scrollY > 20);
-    window.addEventListener("scroll", fn, { passive: true });
-    return () => window.removeEventListener("scroll", fn);
+    const img = new Image(); img.src = "/avatar.jpg";
+    img.onload = () => setHasPhoto(true);
   }, []);
-  const links = ["about", "projects", "skills", "contact"];
   return (
-    <nav className={`nav ${solid ? "solid" : ""}`}>
-      <a href="#" className="nav-logo">AT.</a>
-      <ul className="nav-links">
+    <nav className="navbar">
+      <div className="nav-avatar">
+        {hasPhoto ? <img src="/avatar.jpg" alt="Ali Tayyab" /> : "AT"}
+      </div>
+      <ul className="nav-links-center">
         {links.map(l => (
           <li key={l}>
-            <a href={`#${l}`} className={active === l ? "active" : ""}
-               style={{ textTransform: "uppercase" }}>{l}</a>
+            <a href={`#${l}`} className={active===l?"active":""}
+               style={{textTransform:"capitalize"}}>{l}</a>
           </li>
         ))}
       </ul>
+      <a href="#contact" className="nav-cta">Hire Me ●</a>
     </nav>
   );
 }
 
-/* ── HERO ── */
+/* ══ HERO ══════════════════════════════════════════ */
 function Hero() {
+  const [hasPhoto, setHasPhoto] = useState(false);
+  useEffect(() => {
+    const img = new Image(); img.src = "/avatar.jpg";
+    img.onload = () => setHasPhoto(true);
+  }, []);
   return (
-    <section className="hero">
-      {/* Top-left status */}
-      <div style={{ position:"absolute", top:80, left:40, display:"flex", alignItems:"center", gap:8 }}>
-        <span style={{ width:6, height:6, borderRadius:"50%", background:"#4ade80", display:"inline-block", animation:"breathe 2.5s ease-in-out infinite" }} />
-        <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.68rem", letterSpacing:"0.15em", color:"var(--muted)", textTransform:"uppercase" }}>Available for work</span>
+    <section className="hero" id="hero">
+      <div className="hero-badge">
+        <span className="hero-badge-dot" />
+        Available for work
       </div>
-
-      {/* Top-right location */}
-      <div style={{ position:"absolute", top:80, right:40, fontFamily:"'DM Mono',monospace", fontSize:"0.68rem", color:"var(--muted)", letterSpacing:"0.1em", textAlign:"right" }}>
-        <div>Kot Addu, Punjab</div>
-        <div style={{ color:"var(--dim)", marginTop:2 }}>Pakistan 🇵🇰</div>
+      <h1 className="hero-title">
+        <span>ALI</span>
+        <span className="hero-title-img-wrap">
+          {hasPhoto ? <img src="/avatar.jpg" alt="Ali Tayyab" /> : "AT"}
+        </span>
+        <span className="hero-title-accent">TAYYAB</span>
+      </h1>
+      <p className="hero-sub">
+        CS student from Pakistan building AI-powered web apps. Full-stack developer, product thinker, remote-first.
+      </p>
+      <div className="hero-ctas">
+        <a href="#projects" className="btn btn-lime">View my work ↓</a>
+        <a href="#contact"  className="btn btn-outline">Get in touch →</a>
       </div>
-
-      {/* Big name */}
-      <div>
-        <p className="hero-eyebrow">CS Student · Builder · Developer</p>
-        <h1 className="hero-name">
-          Ali<br /><em>Tayyab</em>
-        </h1>
-      </div>
-
-      {/* Bottom row */}
-      <div className="hero-bottom">
-        <p className="hero-desc">
-          I build AI-powered web apps that solve real problems. Currently pursuing CS at FAST University and shipping side projects.
-        </p>
-        <div className="hero-ctas">
-          <a href="#projects" className="btn btn-filled">View my work →</a>
-          <a href="#contact"  className="btn btn-outline">Get in touch</a>
-        </div>
-      </div>
-
-      <style>{`@keyframes breathe{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}`}</style>
     </section>
   );
 }
 
-/* ── MARQUEE ── */
-function Marquee() {
-  return (
-    <div className="marquee-wrap">
-      <div className="marquee-track">
-        {MARQUEE_ITEMS.map((item, i) => (
-          <span key={i} className="marquee-item">{item}</span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ── ABOUT ── */
+/* ══ ABOUT ═════════════════════════════════════════ */
 function About() {
+  const [hasPhoto, setHasPhoto] = useState(false);
+  useEffect(() => {
+    const img = new Image(); img.src = "/avatar.jpg";
+    img.onload = () => setHasPhoto(true);
+  }, []);
   return (
-    <section id="about">
-      <p className="section-label">About</p>
-      <div className="about-grid">
-        <div>
-          <h2 className="about-heading">
-            Before code,<br />there was <em>curiosity.</em>
-          </h2>
-        </div>
-        <div>
-          <p className="about-body">
-            I&apos;m an 18-year-old CS student from <strong>Kot Addu, Punjab, Pakistan</strong> — preparing for FAST University while building real products on the side.
-          </p>
-          <p className="about-body">
-            Before diving into code, I spent 8 months as a <strong>graphic designer</strong> and worked as a customer service specialist at <strong>IBEX on Amazon campaigns</strong>. That background taught me to think in terms of users, not just features.
-          </p>
-          <p className="about-body">
-            My goal is a <strong>remote tech career</strong> — working from anywhere, building AI-powered tools that make a real difference. I learn by shipping. Every project is a new lesson.
-          </p>
-          <div style={{ marginTop:32, display:"flex", gap:12, flexWrap:"wrap" }}>
-            <a href="https://github.com/Ali2191" target="_blank" rel="noopener noreferrer" className="btn btn-outline" style={{ fontSize:"0.8rem", padding:"9px 18px" }}>GitHub ↗</a>
-            <a href="#contact" className="btn btn-outline" style={{ fontSize:"0.8rem", padding:"9px 18px" }}>Contact →</a>
+    <section className="section" id="about">
+      <div className="section-inner">
+        <p className="section-eyebrow">About me</p>
+        <div className="about-grid">
+          <div>
+            <h2 className="section-heading">ABOUT<br />ME</h2>
+            <p className="about-body">
+              I&apos;m <strong>Ali Tayyab</strong> — an 18-year-old CS student from <strong>Kot Addu, Punjab, Pakistan</strong>. I build full-stack web apps with a focus on AI, and I&apos;m currently preparing for FAST University NAT-ICS.
+            </p>
+            <p className="about-body">
+              Before writing code full-time, I spent 8 months as a <strong>graphic designer</strong> and worked as a customer service specialist at <strong>IBEX on Amazon campaigns</strong>. That background taught me to think about users before features.
+            </p>
+            <p className="about-body">
+              My goal is a <strong>remote tech career</strong> — building AI-powered products that solve real problems for real people.
+            </p>
+            <div className="stats-row">
+              {[["4+","Projects built"],["8mo","Design background"],["2+","Years building"],["18","Years old"]].map(([n,l]) => (
+                <div key={l}>
+                  <span className="stat-num">{n}</span>
+                  <span className="stat-label">{l}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="about-photo">
+            {hasPhoto
+              ? <img src="/avatar.jpg" alt="Ali Tayyab" />
+              : <span className="about-photo-placeholder">AT</span>
+            }
           </div>
         </div>
-      </div>
-
-      {/* Stats */}
-      <div className="stats-row">
-        {[
-          { n:"18", l:"Years old" },
-          { n:"4+", l:"Projects built" },
-          { n:"8mo", l:"Design background" },
-          { n:"∞",  l:"Ideas remaining" },
-        ].map(s => (
-          <div key={s.l} className="stat-cell">
-            <span className="stat-num">{s.n}</span>
-            <span className="stat-label">{s.l}</span>
-          </div>
-        ))}
       </div>
     </section>
   );
 }
 
-/* ── PROJECTS ── */
+/* ══ TIMELINE ══════════════════════════════════════ */
+function Timeline() {
+  const [hasPhoto, setHasPhoto] = useState(false);
+  useEffect(() => {
+    const img = new Image(); img.src = "/avatar.jpg";
+    img.onload = () => setHasPhoto(true);
+  }, []);
+  return (
+    <section className="section" id="experience" style={{borderTop:"1px solid var(--border)"}}>
+      <div className="section-inner">
+        <p className="section-eyebrow">Experience</p>
+        <div className="timeline-grid">
+          <div>
+            <h2 className="section-heading">MY<br />JOURNEY</h2>
+            <ul className="timeline-list">
+              {TIMELINE.map(t => (
+                <li key={t.role} className="timeline-item">
+                  <div>
+                    <div className="tl-role">{t.role}</div>
+                    <div className="tl-company">{t.company}</div>
+                  </div>
+                  <div className="tl-years">{t.years}</div>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="timeline-photo">
+            {hasPhoto
+              ? <img src="/avatar.jpg" alt="Working" />
+              : <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"4rem",color:"var(--lime)",opacity:.25}}>AT</span>
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ══ PROJECTS ══════════════════════════════════════ */
 function Projects() {
   return (
-    <section id="projects">
-      <p className="section-label">Projects</p>
-      <div style={{ marginBottom:40 }}>
-        <h2 style={{ fontFamily:"'Instrument Serif',Georgia,serif", fontSize:"clamp(32px,4vw,52px)", fontWeight:400, color:"var(--white)", letterSpacing:"-0.02em", lineHeight:1.15 }}>
-          Things I&apos;ve <em style={{ fontStyle:"italic", color:"var(--accent)" }}>built</em>
-        </h2>
-      </div>
-      <div className="projects-grid">
-        {PROJECTS.map(p => (
-          <div key={p.name} className="project-card">
-            {/* Header */}
-            <div className="project-header">
-              <div style={{ display:"flex", alignItems:"baseline", gap:12, flexWrap:"wrap" }}>
-                <h3 className="project-name">{p.name}</h3>
-                <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.65rem", color:"var(--muted)" }}>{p.year}</span>
+    <section className="section" id="projects" style={{borderTop:"1px solid var(--border)"}}>
+      <div className="section-inner">
+        <p className="section-eyebrow">Projects</p>
+        <h2 className="section-heading">THINGS I&apos;VE<br />BUILT</h2>
+        <div className="projects-list">
+          {PROJECTS.map(p => (
+            <div key={p.name} className="project-item"
+              onClick={() => p.live && window.open(p.live,"_blank")}>
+              <span className="proj-num">{p.num}</span>
+              <div>
+                <div className="proj-name">{p.name}</div>
+                <div className="proj-desc">{p.desc}</div>
+                <div className="proj-tags">
+                  {p.tags.map(t => <span key={t} className="proj-tag">{t}</span>)}
+                </div>
               </div>
-              <span className={`badge ${p.status === "Live" ? "badge-live" : p.status === "In Progress" ? "badge-wip" : "badge-built"}`}>
-                {p.status}
-              </span>
+              <div className="proj-right">
+                <span className={`badge ${p.status==="Live"?"badge-live":p.status==="In Progress"?"badge-wip":"badge-built"}`}>
+                  {p.status}
+                </span>
+                {p.live && (
+                  <a href={p.live} target="_blank" rel="noopener noreferrer"
+                     className="proj-arrow" onClick={e=>e.stopPropagation()}>↗</a>
+                )}
+              </div>
             </div>
-            <p className="project-desc">{p.desc}</p>
-            <div className="project-tags">
-              {p.tags.map(t => <span key={t} className="tag">{t}</span>)}
-            </div>
-            <div className="project-links">
-              {p.live && (
-                <a href={p.live} target="_blank" rel="noopener noreferrer" className="project-link">
-                  <span>↗</span> Live
-                </a>
-              )}
-              <a href={p.github} target="_blank" rel="noopener noreferrer" className="project-link">
-                <span>⌥</span> GitHub
-              </a>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );
 }
 
-/* ── SKILLS ── */
+/* ══ SKILLS ════════════════════════════════════════ */
 function Skills() {
   return (
-    <section id="skills">
-      <p className="section-label">Skills</p>
-      <div className="skills-layout">
-        <div>
-          <h2 className="skills-heading">
-            What I<br />work<br /><em>with.</em>
-          </h2>
-        </div>
-        <div>
-          {Object.entries(SKILLS).map(([cat, items]) => (
+    <section className="section" id="skills" style={{borderTop:"1px solid var(--border)"}}>
+      <div className="section-inner">
+        <p className="section-eyebrow">Skills</p>
+        <h2 className="section-heading">WHAT I<br />WORK WITH</h2>
+        <div className="skills-grid">
+          {Object.entries(SKILLS).map(([cat,items]) => (
             <div key={cat} className="skill-group">
               <p className="skill-group-name">{cat}</p>
               <div className="skill-chips">
@@ -295,165 +285,191 @@ function Skills() {
   );
 }
 
-/* ── GITHUB ── */
-type GHUser = { login:string; avatar_url:string; bio:string|null; followers:number; public_repos:number; html_url:string; };
-type GHRepo = { id:number; name:string; description:string|null; language:string|null; stargazers_count:number; forks_count:number; updated_at:string; html_url:string; };
+/* ══ GITHUB ════════════════════════════════════════ */
+type GHUser = {login:string;avatar_url:string;bio:string|null;followers:number;public_repos:number;html_url:string};
+type GHRepo = {id:number;name:string;description:string|null;language:string|null;stargazers_count:number;forks_count:number;updated_at:string;html_url:string};
 
 function Github() {
-  const [user,  setUser]  = useState<GHUser | null>(null);
-  const [repos, setRepos] = useState<GHRepo[]>([]);
-  const [err,   setErr]   = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [user,  setUser]    = useState<GHUser|null>(null);
+  const [repos, setRepos]   = useState<GHRepo[]>([]);
+  const [err,   setErr]     = useState(false);
+  const [loading,setLoading]= useState(true);
 
   useEffect(() => {
     const GH = "Ali2191";
     Promise.all([
-      fetch(`https://api.github.com/users/${GH}`).then(r => { if (!r.ok) throw new Error(); return r.json(); }),
-      fetch(`https://api.github.com/users/${GH}/repos?sort=updated&per_page=4`).then(r => { if (!r.ok) throw new Error(); return r.json(); }),
-    ])
-    .then(([u, r]) => { setUser(u); setRepos(Array.isArray(r) ? r.slice(0,4) : []); })
-    .catch(() => setErr(true))
-    .finally(() => setLoading(false));
-  }, []);
+      fetch(`https://api.github.com/users/${GH}`).then(r=>{if(!r.ok)throw 0;return r.json()}),
+      fetch(`https://api.github.com/users/${GH}/repos?sort=updated&per_page=4`).then(r=>{if(!r.ok)throw 0;return r.json()}),
+    ]).then(([u,r])=>{setUser(u);setRepos(Array.isArray(r)?r.slice(0,4):[])})
+      .catch(()=>setErr(true)).finally(()=>setLoading(false));
+  },[]);
 
   return (
-    <section id="github" style={{ borderTop:"1px solid var(--border)" }}>
-      <p className="section-label">GitHub</p>
-      <div style={{ marginBottom:32 }}>
-        <h2 style={{ fontFamily:"'Instrument Serif',Georgia,serif", fontSize:"clamp(32px,4vw,52px)", fontWeight:400, color:"var(--white)", letterSpacing:"-0.02em" }}>
-          Recent <em style={{ fontStyle:"italic", color:"var(--accent)" }}>activity</em>
-        </h2>
-      </div>
-
-      {err && (
-        <div style={{ padding:24, background:"var(--surface)", border:"1px solid var(--border)", borderRadius:10, fontFamily:"'DM Mono',monospace", fontSize:"0.8rem", color:"var(--muted)" }}>
-          GitHub API rate limit reached.{" "}
-          <a href="https://github.com/Ali2191" target="_blank" rel="noopener noreferrer" style={{ color:"var(--accent)", textDecoration:"none" }}>View profile directly →</a>
-        </div>
-      )}
-
-      {loading && !err && (
-        <div className="repo-grid">
-          {[0,1,2,3].map(i => <div key={i} className="gh-placeholder" style={{ animationDelay:`${i*0.15}s` }} />)}
-        </div>
-      )}
-
-      {!loading && !err && (
-        <>
-          {user && (
-            <div className="github-profile">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={user.avatar_url} alt={user.login} className="gh-avatar" />
-              <div style={{ flex:1 }}>
-                <div className="gh-name">{user.login}</div>
-                {user.bio && <div className="gh-bio">{user.bio}</div>}
-                <div className="gh-meta">
-                  <span>{user.followers} followers</span>
-                  <span>{user.public_repos} repos</span>
-                </div>
-              </div>
-              <a href={user.html_url} target="_blank" rel="noopener noreferrer"
-                className="btn btn-outline" style={{ fontSize:"0.8rem", padding:"9px 18px", whiteSpace:"nowrap" }}>
-                View Profile ↗
-              </a>
-            </div>
-          )}
-          {repos.length > 0 && (
-            <div className="repo-grid">
-              {repos.map(r => (
-                <a key={r.id} href={r.html_url} target="_blank" rel="noopener noreferrer" className="repo-card">
-                  <div className="repo-name">{r.name}</div>
-                  {r.description && <div className="repo-desc">{r.description}</div>}
-                  <div className="repo-meta">
-                    {r.language && (
-                      <span>
-                        <span className="lang-dot" style={{ background: LANG_COLORS[r.language] || "#888" }} />
-                        {r.language}
-                      </span>
-                    )}
-                    <span>★ {r.stargazers_count}</span>
-                    <span>{new Date(r.updated_at).toLocaleDateString("en-US", { month:"short", year:"numeric" })}</span>
+    <section className="section" id="github" style={{borderTop:"1px solid var(--border)"}}>
+      <div className="section-inner">
+        <p className="section-eyebrow">GitHub</p>
+        <h2 className="section-heading">RECENT<br />ACTIVITY</h2>
+        {err && (
+          <div style={{padding:24,background:"var(--surface)",border:"1px solid var(--border)",borderRadius:12,fontFamily:"'DM Mono',monospace",fontSize:"0.8rem",color:"var(--muted)"}}>
+            GitHub API rate limited. <a href="https://github.com/Ali2191" target="_blank" rel="noopener noreferrer" style={{color:"var(--lime)"}}>View profile →</a>
+          </div>
+        )}
+        {loading && !err && (
+          <div className="repo-grid">
+            {[0,1,2,3].map(i=><div key={i} className="gh-placeholder" style={{animationDelay:`${i*.15}s`}}/>)}
+          </div>
+        )}
+        {!loading && !err && (
+          <>
+            {user && (
+              <div className="gh-profile-card">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={user.avatar_url} alt={user.login} className="gh-avatar-img"/>
+                <div style={{flex:1}}>
+                  <div className="gh-name">{user.login}</div>
+                  {user.bio && <div className="gh-bio">{user.bio}</div>}
+                  <div className="gh-stats">
+                    <span>{user.followers} followers</span>
+                    <span>{user.public_repos} repos</span>
                   </div>
+                </div>
+                <a href={user.html_url} target="_blank" rel="noopener noreferrer"
+                   className="btn btn-outline" style={{fontSize:"0.8rem",padding:"9px 20px",borderRadius:"999px",whiteSpace:"nowrap"}}>
+                  View Profile ↗
                 </a>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+              </div>
+            )}
+            {repos.length>0 && (
+              <div className="repo-grid">
+                {repos.map(r=>(
+                  <a key={r.id} href={r.html_url} target="_blank" rel="noopener noreferrer" className="repo-card">
+                    <div className="repo-name">{r.name}</div>
+                    {r.description && <div className="repo-desc">{r.description}</div>}
+                    <div className="repo-meta">
+                      {r.language && (
+                        <span>
+                          <span className="lang-dot" style={{background:LANG_COLORS[r.language]||"#888"}}/>
+                          {r.language}
+                        </span>
+                      )}
+                      <span>★ {r.stargazers_count}</span>
+                      <span>{new Date(r.updated_at).toLocaleDateString("en-US",{month:"short",year:"numeric"})}</span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </section>
   );
 }
 
-/* ── CONTACT ── */
+/* ══ CONTACT ═══════════════════════════════════════ */
 function Contact() {
+  const [hasPhoto, setHasPhoto] = useState(false);
+  useEffect(() => {
+    const img = new Image(); img.src = "/avatar.jpg";
+    img.onload = () => setHasPhoto(true);
+  },[]);
   return (
-    <section id="contact" className="contact-section">
-      <p className="section-label">Contact</p>
-      <h2 className="contact-heading">
-        Let&apos;s build<br /><em>something.</em>
-      </h2>
-      <div className="contact-tiles">
-        <a href="mailto:hello@alitayyab.dev" className="contact-tile">
-          <div className="tile-icon">✉</div>
-          <div>
-            <div className="tile-label">Email</div>
-            <div className="tile-value">hello@alitayyab.dev</div>
+    <section className="section" id="contact" style={{borderTop:"1px solid var(--border)"}}>
+      <div className="contact-section">
+        {/* Left — photo */}
+        <div className="contact-left">
+          <div className="contact-img-frame">
+            {hasPhoto
+              ? <img src="/avatar.jpg" alt="Ali Tayyab"/>
+              : <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"6rem",color:"var(--lime)",opacity:.2}}>AT</span>
+            }
+            <div className="contact-img-badge">Hi!</div>
           </div>
-        </a>
-        <a href="https://github.com/Ali2191" target="_blank" rel="noopener noreferrer" className="contact-tile">
-          <div className="tile-icon">⌥</div>
-          <div>
-            <div className="tile-label">GitHub</div>
-            <div className="tile-value">github.com/Ali2191</div>
+        </div>
+        {/* Right — links */}
+        <div className="contact-right">
+          <h2 className="contact-heading">LET&apos;S WORK<br />TOGETHER</h2>
+          <p className="contact-sub">
+            Open to internships, freelance projects, collaborations, and interesting conversations. Reach out — I reply fast.
+          </p>
+          <div className="contact-tiles">
+            <a href="mailto:hello@alitayyab.dev" className="contact-tile">
+              <div className="tile-icon">✉</div>
+              <div>
+                <div className="tile-label">Email</div>
+                <div className="tile-value">hello@alitayyab.dev</div>
+              </div>
+            </a>
+            <a href="https://github.com/Ali2191" target="_blank" rel="noopener noreferrer" className="contact-tile">
+              <div className="tile-icon">⌥</div>
+              <div>
+                <div className="tile-label">GitHub</div>
+                <div className="tile-value">github.com/Ali2191</div>
+              </div>
+            </a>
+            <a href="https://linkedin.com/in/alitayyab" target="_blank" rel="noopener noreferrer" className="contact-tile">
+              <div className="tile-icon" style={{fontWeight:700,fontSize:"13px",fontFamily:"serif"}}>in</div>
+              <div>
+                <div className="tile-label">LinkedIn</div>
+                <div className="tile-value">linkedin.com/in/alitayyab</div>
+              </div>
+            </a>
           </div>
-        </a>
-        <a href="https://linkedin.com/in/alitayyab" target="_blank" rel="noopener noreferrer" className="contact-tile">
-          <div className="tile-icon">in</div>
-          <div>
-            <div className="tile-label">LinkedIn</div>
-            <div className="tile-value">linkedin.com/in/alitayyab</div>
-          </div>
-        </a>
-      </div>
-      <div className="footer-bar">
-        <span>© 2025 Ali Tayyab</span>
-        <span>Built with Next.js · Deployed on Vercel</span>
-        <span>Kot Addu, Pakistan 🇵🇰</span>
+        </div>
       </div>
     </section>
   );
 }
 
-/* ── ACTIVE SECTION ── */
+/* ══ FOOTER ════════════════════════════════════════ */
+function Footer() {
+  return (
+    <footer className="footer">
+      <div className="footer-inner">
+        <span className="footer-name">ALI TAYYAB</span>
+        <div className="footer-links">
+          <a href="https://github.com/Ali2191" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://linkedin.com/in/alitayyab" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          <a href="mailto:hello@alitayyab.dev">Email</a>
+        </div>
+        <span className="footer-copy">© 2025 Ali Tayyab · Built with Next.js</span>
+      </div>
+    </footer>
+  );
+}
+
+/* ══ ACTIVE SECTION ════════════════════════════════ */
 function useActive() {
   const [active, setActive] = useState("about");
   useEffect(() => {
-    const ids = ["about","projects","skills","github","contact"];
-    const obs = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); });
-    }, { threshold: 0.35 });
+    const ids = ["about","projects","skills","contact"];
+    const obs = new IntersectionObserver(
+      entries => entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); }),
+      { threshold: 0.3 }
+    );
     ids.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el); });
     return () => obs.disconnect();
-  }, []);
+  },[]);
   return active;
 }
 
-/* ── PAGE ── */
+/* ══ PAGE ══════════════════════════════════════════ */
 export default function Page() {
   const active = useActive();
   return (
     <>
       <Cursor />
-      <Nav active={active} />
+      <Navbar active={active} />
       <main>
         <Hero />
-        <Marquee />
         <About />
+        <Timeline />
         <Projects />
         <Skills />
         <Github />
         <Contact />
       </main>
+      <Footer />
     </>
   );
 }

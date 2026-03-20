@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Ali Tayyab — Developer & Builder",
-  description: "CS student from Pakistan building AI-powered web apps. Full-stack developer, product thinker, remote-first.",
+  description: "CS student from Pakistan building AI-powered web apps. Full-stack developer, available for work.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -12,7 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
       </head>
       <body>{children}</body>
     </html>
