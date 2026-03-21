@@ -4,7 +4,7 @@ import Navbar from './components/ui/Navbar';
 import CustomCursor from './components/ui/CustomCursor';
 
 export const metadata: Metadata = {
-  title: { template: '%s | Ali Tayyab', default: 'Ali Tayyab — Developer & Builder' },
+  title: { template: '%s | Tayyab Ali', default: 'Tayyab Ali — Developer & Builder' },
   description: 'CS student from Pakistan building AI-powered web apps. Full-stack developer, available for work.',
   openGraph: { type: 'website', locale: 'en_US', siteName: 'Ali Tayyab' },
   twitter: { card: 'summary_large_image' },
