@@ -1,232 +1,176 @@
-"use client";
-import { useEffect, useRef, useState, useCallback } from "react";
-
-/* ══ DATA ══ */
-const PROJECTS = [
-  { name:"IsItAI", cat:"AI / Full-Stack", status:"Live" as const, year:"2025",
-    desc:"Five-layer forensic AI image detection — model ensembles, EXIF forensics, FFT analysis.",
-    tags:["Next.js","AI/ML","Vercel"], live:"https://isitai-gilt.vercel.app", github:"https://github.com/Ali2191",
-    accent:"#e8f5e9" },
-  { name:"Learnify", cat:"EdTech / Full-Stack", status:"In Progress" as const, year:"2025",
-    desc:"AI exam-prep for Pakistani students. NUST NET, FAST NAT-ICS, MDCAT — adaptive practice + spaced repetition.",
-    tags:["Next.js 14","Supabase","Gemini API"], live:null, github:"https://github.com/Ali2191",
-    accent:"#e8eaf6" },
-  { name:"Pakistan Resume Builder", cat:"AI / Productivity", status:"Built" as const, year:"2024",
-    desc:"ATS scoring, AI bullet writer, cover letter generator. Four templates for Pakistani job market.",
-    tags:["React","Claude API","PDF"], live:null, github:"https://github.com/Ali2191",
-    accent:"#fce4ec" },
-  { name:"UniDash", cat:"Mobile / Productivity", status:"In Progress" as const, year:"2025",
-    desc:"Unified Gmail + Calendar + Tasks mobile app. React Native + Expo with Google OAuth.",
-    tags:["React Native","Expo","Google APIs"], live:null, github:"https://github.com/Ali2191",
-    accent:"#e3f2fd" },
-];
-
-const TIMELINE = [
-  { role:"Full-Stack Developer", co:"Self-employed · Building AI products", yr:"2024 — Present" },
-  { role:"CS Student", co:"Preparing for FAST University NAT-ICS", yr:"2025 — Present" },
-  { role:"Customer Service Specialist", co:"IBEX · Amazon Campaign", yr:"2023 — 2024" },
-  { role:"Graphic Designer", co:"Freelance", yr:"2022 — 2023" },
-];
-
-const BUILDING = [
-  { icon:"🚀", title:"Learnify", desc:"AI-powered exam prep for Pakistani students — NUST NET, FAST NAT-ICS, MDCAT. Adaptive quizzes, spaced repetition, Gemini API.", status:"Actively building" },
-  { icon:"📚", title:"NAT-ICS Prep", desc:"Grinding through the Dogars book daily. Logical reasoning, CS theory, math, physics. FAST University admission is the target.", status:"Daily practice" },
-  { icon:"🌍", title:"Remote Career", desc:"Every project is a step toward a remote tech career. Building the portfolio, the skills, and the reputation to work from anywhere.", status:"Long-term goal" },
-];
-
-const FAQS = [
-  { q:"Are you available for freelance work?", a:"Yes — I take on freelance web development projects. I'm especially interested in AI-powered tools, web apps, and anything that needs a solid Next.js + Supabase stack." },
-  { q:"Can you work remotely?", a:"Absolutely. Remote-first is my preference and long-term goal. I'm set up to collaborate async across any timezone." },
-  { q:"Are you open to internships?", a:"Yes, actively looking. I'm available for remote internships in full-stack development, AI/ML engineering, or product development." },
-  { q:"What's your typical tech stack?", a:"Next.js + TypeScript + Tailwind on the frontend, Supabase for backend + DB, and AI APIs (Gemini, Claude) for intelligence layers. Deployed on Vercel." },
-  { q:"How do you work on a project?", a:"Discuss scope → agree on deliverables → build iteratively → ship and iterate. I keep communication tight and updates frequent." },
-];
-
-const ALL_SKILLS = [
-  "Next.js","React","TypeScript","Python","Supabase","Tailwind CSS",
-  "Gemini API","Claude API","React Native","Node.js","Figma","n8n","Vercel","PostgreSQL",
-  "Next.js","React","TypeScript","Python","Supabase","Tailwind CSS",
-  "Gemini API","Claude API","React Native","Node.js","Figma","n8n","Vercel","PostgreSQL",
-];
-
-const TECH_PILLS = [
-  "Next.js","React","TypeScript","Python","Supabase","Tailwind CSS",
-  "Gemini API","Claude API","React Native","Node.js","Figma","n8n","Vercel",
-  "Next.js","React","TypeScript","Python","Supabase","Tailwind CSS",
-  "Gemini API","Claude API","React Native","Node.js","Figma","n8n","Vercel",
-];
-
-const GH = "Ali2191";
-type GHUser = { login:string; avatar_url:string; bio:string|null; followers:number; public_repos:number; html_url:string; };
-type GHRepo = { id:number; name:string; description:string|null; language:string|null; stargazers_count:number; forks_count:number; updated_at:string; html_url:string; };
-const LANG_COLORS: Record<string,string> = { TypeScript:"#3178c6",JavaScript:"#f0db4f",Python:"#4B8BBE",CSS:"#7b5ea7",HTML:"#e44d26" };
-
-/* ══ CURSOR ══ */
-function Cursor() {
-  const ref = useRef<HTMLDivElement>(null);
-  const lx = useRef(0); const ly = useRef(0);
-  useEffect(() => {
-    if (window.matchMedia("(pointer:coarse)").matches) return;
-    let raf: number = 0;
-    const move = (e: MouseEvent) => {
-      lx.current += (e.clientX - lx.current) * 0.14;
-      ly.current += (e.clientY - ly.current) * 0.14;
-      if (ref.current) { ref.current.style.left=e.clientX+"px"; ref.current.style.top=e.clientY+"px"; }
-    };
-    const addH = () => ref.current?.classList.add("hovering");
-    const rmH  = () => ref.current?.classList.remove("hovering","on-card");
-    const addC = () => { ref.current?.classList.add("on-card"); ref.current?.classList.remove("hovering"); };
-    const rmC  = () => ref.current?.classList.remove("on-card");
-    const bind = () => {
-      document.querySelectorAll("a,button,.theme-toggle").forEach(el => { el.addEventListener("mouseenter",addH); el.addEventListener("mouseleave",rmH); });
-      document.querySelectorAll(".project-card").forEach(el => { el.addEventListener("mouseenter",addC); el.addEventListener("mouseleave",rmC); });
-    };
-    window.addEventListener("mousemove", move);
-    setTimeout(bind, 600);
-    return () => { window.removeEventListener("mousemove", move); cancelAnimationFrame(raf); };
-  }, []);
-  return (
-    <div ref={ref} className="cur" style={{position:"fixed",pointerEvents:"none"}}>
-      <span className="cur-label">View</span>
-    </div>
-  );
-}
-
-/* ══ THEME ══ */
-function useTheme() {
-  const [dark, setDark] = useState(false);
-  useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme:dark)").matches;
-    const isDark = saved ? saved === "dark" : prefersDark;
-    setDark(isDark);
-    document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
-  }, []);
-  const toggle = useCallback(() => {
-    setDark(d => {
-      const next = !d;
-      document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
-      localStorage.setItem("theme", next ? "dark" : "light");
-      return next;
-    });
-  }, []);
-  return { dark, toggle };
-}
-
-/* ══ NAV ══ */
-function Nav({ active, dark, onToggle }: { active:string; dark:boolean; onToggle:()=>void }) {
-  const [scrolled, setScrolled] = useState(false);
-  const [hasPhoto, setHasPhoto] = useState(false);
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", fn, { passive:true });
-    return () => window.removeEventListener("scroll", fn);
-  }, []);
-  useEffect(() => {
-    const img = new Image(); img.src = "/avatar.jpg";
-    img.onload = () => setHasPhoto(true);
-  }, []);
-  const links = [
-    { id:"projects", label:"Projects" },
-    { id:"about", label:"About me" },
-    { id:"skills", label:"Skills" },
-  ];
-  return (
-    <nav className={`nav ${scrolled?"scrolled":""}`}>
-      <div className="nav-left">
-        <div className="nav-avatar">
-          {hasPhoto ? <img src="/avatar.jpg" alt="Ali" /> : "AT"}
-        </div>
-        <div>
-          <div className="nav-name">Ali Tayyab</div>
-          <div className="nav-location">Kot Addu · Pakistan</div>
-        </div>
-      </div>
-      <div className="nav-right">
-        {links.map(l => (
-          <a key={l.id} href={`#${l.id}`}
-             className={`nav-link ${active===l.id?"active":""}`}>{l.label}</a>
-        ))}
-        <button className="theme-toggle" onClick={onToggle} aria-label="Toggle theme">
-          {dark ? "☀️" : "🌙"}
-        </button>
-        <a href="#contact" className="nav-cta">Let&apos;s chat →</a>
-      </div>
-    </nav>
-  );
-}
+'use client';
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { projects } from './data/projects';
+import SectionReveal from './components/ui/SectionReveal';
+import { MapPin, ArrowRight, Github, Mail, Linkedin, ExternalLink, Star, GitFork } from 'lucide-react';
 
 /* ══ HERO ══ */
 function Hero() {
+  const [typed, setTyped] = useState('');
+  const [started, setStarted] = useState(false);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const roles = 'CS Student  ·  Full-Stack Developer  ·  AI Builder';
+
+  useEffect(() => { const t = setTimeout(() => setStarted(true), 900); return () => clearTimeout(t); }, []);
+  useEffect(() => {
+    if (!started) return;
+    let i = 0;
+    const id = setInterval(() => {
+      if (i < roles.length) setTyped(roles.slice(0, ++i));
+      else clearInterval(id);
+    }, 55);
+    return () => clearInterval(id);
+  }, [started]);
+
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+    const fn = (e: MouseEvent) => {
+      const x = e.clientX / window.innerWidth  - 0.5;
+      const y = e.clientY / window.innerHeight - 0.5;
+      hero.style.setProperty('--px', `${x * 40}px`);
+      hero.style.setProperty('--py', `${y * 20}px`);
+    };
+    window.addEventListener('mousemove', fn, { passive: true });
+    return () => window.removeEventListener('mousemove', fn);
+  }, []);
+
   return (
-    <section className="hero" id="hero">
-      <div className="hero-badge">
-        <span className="hero-badge-dot" />
-        Full-Stack Developer · Available for projects
+    <section id="hero" ref={heroRef} style={{ minHeight:'100dvh', display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', textAlign:'center', padding:'100px 40px 80px', position:'relative', overflow:'hidden', background:'var(--bg-void)' }}>
+      {/* Background */}
+      <div className="hero-bg">
+        <div className="blob blob-1" style={{ transform:'translate(calc(var(--px,0px) * 0.5), calc(var(--py,0px) * 0.5))' }} />
+        <div className="blob blob-2" style={{ transform:'translate(calc(var(--px,0px) * -0.4), calc(var(--py,0px) * -0.3))' }} />
+        <div className="dot-grid" />
       </div>
-      <h1 className="hero-heading">
-        Code that makes people <em>build and ship</em> faster
-      </h1>
-      <p className="hero-sub">
-        CS student from Pakistan building AI-powered web apps — products that solve real problems for real people.
-      </p>
-      <div className="hero-ctas">
-        <a href="#projects" className="btn btn-dark">View my work →</a>
-        <a href="#contact"  className="btn btn-light">Get in touch</a>
-      </div>
-      <div className="hero-tech">
-        <div className="tech-scroll">
-          {TECH_PILLS.map((t,i) => <span key={i} className="tech-pill">{t}</span>)}
+
+      {/* Content */}
+      <div style={{ position:'relative', zIndex:2, maxWidth:800, width:'100%' }}>
+        {/* Badge */}
+        <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.25)', borderRadius:999, padding:'7px 18px', marginBottom:36, animation:'fadeIn 0.6s 0.2s both' }}>
+          <span style={{ width:7, height:7, borderRadius:'50%', background:'var(--accent-green)', animation:'pulse 2.5s ease-in-out infinite' }} />
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'var(--text-xs)', color:'var(--accent-green)', letterSpacing:'0.1em', textTransform:'uppercase' }}>Available for Opportunities</span>
+        </div>
+
+        {/* Name */}
+        <h1 style={{ fontFamily:"'Geist',sans-serif", fontWeight:900, fontSize:'var(--text-hero)', lineHeight:0.95, letterSpacing:'-0.04em', marginBottom:24 }}>
+          <span style={{ display:'block', color:'var(--text-primary)', animation:'slideUp 0.7s 0.5s both' }}>Ali</span>
+          <span style={{ display:'block', background:'linear-gradient(135deg, var(--accent-violet), var(--accent-cyan))', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text', animation:'slideUp 0.7s 0.6s both' }}>Tayyab</span>
+        </h1>
+
+        {/* Typewriter */}
+        <p style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'var(--text-sm)', color:'var(--text-secondary)', marginBottom:12, minHeight:'1.5em', letterSpacing:'0.04em', animation:'fadeIn 0.6s 0.7s both' }}>
+          {typed}{typed.length < roles.length && <span style={{ borderRight:'2px solid var(--accent-cyan)', paddingRight:2, animation:'blink 1s step-end infinite' }} />}
+        </p>
+
+        {/* Location */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, color:'var(--text-muted)', marginBottom:24, animation:'fadeIn 0.6s 1.1s both' }}>
+          <MapPin size={13} />
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'var(--text-xs)' }}>Kot Addu, Punjab, Pakistan</span>
+        </div>
+
+        {/* Bio */}
+        <p style={{ fontSize:'var(--text-lg)', color:'var(--text-secondary)', maxWidth:520, margin:'0 auto 40px', lineHeight:1.7, animation:'fadeIn 0.6s 1.3s both' }}>
+          I build AI-powered web apps that solve real problems. Currently pursuing CS at FAST University, shipping side projects, and turning ideas into products.
+        </p>
+
+        {/* CTAs */}
+        <div style={{ display:'flex', gap:12, justifyContent:'center', flexWrap:'wrap', animation:'fadeIn 0.6s 1.5s both' }}>
+          <Link href="/projects" className="btn-primary" data-cursor="link">
+            View my work <ArrowRight size={15} />
+          </Link>
+          <Link href="/contact" className="btn-ghost" data-cursor="link">
+            Get in touch
+          </Link>
+        </div>
+
+        {/* Scroll hint */}
+        <div style={{ position:'absolute', bottom:-60, left:'50%', transform:'translateX(-50%)', display:'flex', flexDirection:'column', alignItems:'center', gap:6, animation:'fadeIn 0.6s 2s both', opacity:0.5 }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'var(--text-muted)', letterSpacing:'0.15em', textTransform:'uppercase' }}>Scroll to explore</span>
+          <div style={{ width:1, height:36, background:'linear-gradient(to bottom, var(--accent-violet), transparent)', animation:'scrollBounce 2s ease-in-out infinite' }} />
         </div>
       </div>
+      <style>{`
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+        @keyframes scrollBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+      `}</style>
     </section>
   );
 }
 
-/* ══ PROJECTS ══ */
-function Projects() {
+/* ══ ABOUT PREVIEW ══ */
+function AboutPreview() {
+  const [count1, setC1] = useState(0);
+  const [count2, setC2] = useState(0);
+  const [count3, setC3] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  const triggered = useRef(false);
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !triggered.current) {
+        triggered.current = true;
+        const countTo = (target: number, setter: (n: number) => void) => {
+          let n = 0;
+          const step = Math.ceil(target / 30);
+          const id = setInterval(() => { n = Math.min(n + step, target); setter(n); if (n >= target) clearInterval(id); }, 40);
+        };
+        countTo(8, setC1); countTo(4, setC2); countTo(2, setC3);
+      }
+    }, { threshold: 0.4 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
   return (
-    <section id="projects" style={{borderTop:"1px solid var(--border)"}}>
-      <div className="wrap">
-        <span className="eyebrow">Projects</span>
-        <h2 style={{fontFamily:"'Instrument Serif',serif",fontSize:"clamp(32px,4vw,52px)",fontWeight:400,letterSpacing:"-0.025em",color:"var(--ink)",marginBottom:8,lineHeight:1.1}}>
-          Apps built on logic,<br /><em style={{fontStyle:"italic"}}>finished with craft.</em>
-        </h2>
-        <p style={{fontSize:"0.9rem",color:"var(--ink3)",marginBottom:48}}>Real products, real code, real users.</p>
-        <div className="projects-grid">
-          {PROJECTS.map(p => (
-            <div key={p.name} className="project-card"
-              onClick={() => p.live && window.open(p.live,"_blank")}>
-              <div className="project-card-img" style={{background:p.accent}}>
-                <div className="project-img-placeholder">
-                  <span style={{fontSize:"2.5rem"}}>
-                    {p.name==="IsItAI"?"🔍":p.name==="Learnify"?"📚":p.name.includes("Resume")?"📄":"📱"}
-                  </span>
-                  <span>{p.name}</span>
-                </div>
-                <div className="project-card-overlay">
-                  <div className="overlay-btn">VIEW</div>
-                </div>
+    <section id="about" style={{ padding:'100px 40px', maxWidth:1100, margin:'0 auto' }}>
+      <div style={{ display:'grid', gridTemplateColumns:'3fr 2fr', gap:80, alignItems:'start' }}>
+        {/* Left */}
+        <div>
+          <SectionReveal><p className="section-label">// ABOUT</p></SectionReveal>
+          <SectionReveal delay={80}>
+            <h2 className="section-heading" style={{ marginBottom:32 }}>Before Code</h2>
+          </SectionReveal>
+          <SectionReveal delay={160}>
+            <p style={{ fontSize:'var(--text-base)', color:'var(--text-secondary)', lineHeight:1.8, marginBottom:24 }} data-cursor="text">
+              Before becoming a developer, I worked 8 months as a <strong style={{ color:'var(--text-primary)' }}>graphic designer</strong> and as a customer service specialist at <strong style={{ color:'var(--text-primary)' }}>IBEX on Amazon campaigns</strong>. That taught me to think about users before I even knew what UX was.
+            </p>
+          </SectionReveal>
+          <SectionReveal delay={200}>
+            <h2 className="section-heading" style={{ marginBottom:16 }}>Right Now</h2>
+          </SectionReveal>
+          <SectionReveal delay={260}>
+            <p style={{ fontSize:'var(--text-base)', color:'var(--text-secondary)', lineHeight:1.8, marginBottom:32 }} data-cursor="text">
+              Preparing for <strong style={{ color:'var(--text-primary)' }}>FAST University NAT-ICS</strong>, actively building Learnify — a platform specifically for Pakistani students preparing for university entrance exams. Reading, shipping, improving every day.
+            </p>
+          </SectionReveal>
+          <SectionReveal delay={320}>
+            <Link href="/about" data-cursor="link" style={{ display:'inline-flex', alignItems:'center', gap:8, color:'var(--accent-glow)', fontFamily:"'Geist',sans-serif", fontWeight:600, fontSize:'var(--text-base)', textDecoration:'none', borderBottom:'1px solid transparent', paddingBottom:2, transition:'border-color 0.2s' }}
+              onMouseEnter={e=>(e.currentTarget.style.borderColor='var(--accent-glow)')}
+              onMouseLeave={e=>(e.currentTarget.style.borderColor='transparent')}>
+              Read my full story <ArrowRight size={15} />
+            </Link>
+          </SectionReveal>
+        </div>
+
+        {/* Right — Stat cards */}
+        <div ref={ref} style={{ display:'flex', flexDirection:'column', gap:12, paddingTop:8 }}>
+          {[
+            { n: count1 + '+', label: 'Months as a Designer', color: 'var(--accent-violet)' },
+            { n: count2 + '+', label: 'Live & In-Progress Projects', color: 'var(--accent-cyan)' },
+            { n: count3 + '+', label: 'Years Learning to Code', color: 'var(--accent-green)' },
+          ].map((s, i) => (
+            <SectionReveal key={s.label} direction="right" delay={i * 100}>
+              <div style={{ background:'var(--bg-surface)', border:'1px solid var(--border-subtle)', borderRadius:14, padding:'20px 24px', borderLeft:`3px solid ${s.color}`, transition:'border-color 0.2s, transform 0.2s' }}
+                onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.transform='translateX(4px)'}}
+                onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.transform=''}}>
+                <div style={{ fontFamily:"'Geist',sans-serif", fontWeight:800, fontSize:'var(--text-4xl)', color:s.color, lineHeight:1 }}>{s.n}</div>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'var(--text-xs)', color:'var(--text-muted)', marginTop:4, letterSpacing:'0.06em' }}>{s.label}</div>
               </div>
-              <div className="project-card-body">
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:6}}>
-                  <div className="project-card-name">{p.name}</div>
-                  <span className={p.status==="Live"?"badge-live":p.status==="In Progress"?"badge-wip":"badge-built"}>{p.status}</span>
-                </div>
-                <div className="project-card-cat">{p.cat}</div>
-                <p style={{fontSize:"0.82rem",color:"var(--ink3)",lineHeight:1.65,marginTop:8,marginBottom:10}}>{p.desc}</p>
-                <div className="project-card-tags">
-                  {p.tags.map(t=><span key={t} className="ptag">{t}</span>)}
-                  {p.live && (
-                    <a href={p.live} target="_blank" rel="noopener noreferrer"
-                       onClick={e=>e.stopPropagation()}
-                       style={{marginLeft:"auto",fontSize:"0.75rem",color:"var(--ink3)",textDecoration:"none",display:"flex",alignItems:"center",gap:4,fontFamily:"'Geist Mono',monospace"}}>
-                      Live ↗
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
+            </SectionReveal>
           ))}
         </div>
       </div>
@@ -234,257 +178,266 @@ function Projects() {
   );
 }
 
-/* ══ ABOUT ══ */
-function About() {
-  const [hasPhoto, setHasPhoto] = useState(false);
-  useEffect(() => { const img=new Image(); img.src="/avatar.jpg"; img.onload=()=>setHasPhoto(true); }, []);
+/* ══ PROJECTS PREVIEW ══ */
+function ProjectsPreview() {
+  const statusClass = (s: string) => s === 'Live' ? 'badge-live' : s === 'In Progress' ? 'badge-wip' : 'badge-built';
+  const accentBg = (color: string) => `linear-gradient(135deg, ${color}22, ${color}11)`;
+
   return (
-    <section id="about" style={{borderTop:"1px solid var(--border)"}}>
-      <div className="wrap">
-        <span className="eyebrow">About</span>
-        <div className="about-grid">
-          <div>
-            <h2 className="about-name">Hi, I am<br /><em>Ali Tayyab</em></h2>
-            <div className="social-row">
-              <a href="https://github.com/Ali2191" target="_blank" rel="noopener noreferrer" className="social-btn" title="GitHub">⌥</a>
-              <a href="https://linkedin.com/in/alitayyab" target="_blank" rel="noopener noreferrer" className="social-btn" title="LinkedIn" style={{fontWeight:700,fontSize:"13px",fontFamily:"serif"}}>in</a>
-              <a href="mailto:hello@alitayyab.dev" className="social-btn" title="Email">✉</a>
-            </div>
-            <p className="about-para">
-              An 18-year-old CS student from <strong>Kot Addu, Punjab, Pakistan</strong> — currently preparing for FAST University NAT-ICS while building real AI-powered products on the side.
-            </p>
-            <p className="about-para">
-              Before coding full-time I spent 8 months as a <strong>graphic designer</strong> and worked as a customer service specialist at <strong>IBEX on Amazon campaigns</strong>. That background taught me to think about users before features.
-            </p>
-            <p className="about-para">
-              My goal is a <strong>remote tech career</strong> — building from anywhere, solving real problems with AI and clean engineering.
-            </p>
-            <div className="stat-grid">
-              {[["4+","Projects shipped"],["8mo","Design background"],["2+","Years building"],["18","Years old"]].map(([v,k])=>(
-                <div key={k} className="stat-box">
-                  <div className="stat-val">{v}</div>
-                  <div className="stat-key">{k}</div>
+    <section id="projects" style={{ padding:'100px 40px', maxWidth:1100, margin:'0 auto', borderTop:'1px solid var(--border-subtle)' }}>
+      <SectionReveal><p className="section-label">// PROJECTS</p></SectionReveal>
+      <SectionReveal delay={80}>
+        <h2 className="section-heading">
+          Things I&apos;ve <span className="grad">built</span>
+        </h2>
+      </SectionReveal>
+      <SectionReveal delay={120}>
+        <p style={{ fontSize:'var(--text-base)', color:'var(--text-muted)', marginBottom:48 }}>Real products, real users, real code.</p>
+      </SectionReveal>
+
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+        {projects.map((p, i) => (
+          <SectionReveal key={p.slug} delay={i * 100}>
+            <Link href={`/projects/${p.slug}`} style={{ textDecoration:'none', display:'block' }} data-cursor="project">
+              <div className="project-card">
+                <div className="project-card-top" style={{ background: accentBg(p.accentColor) }}>
+                  <span style={{ fontFamily:"'Geist',sans-serif", fontWeight:900, fontSize:'clamp(4rem,8vw,7rem)', color:p.accentColor, opacity:0.15, userSelect:'none', position:'absolute' }}>
+                    {p.title[0]}
+                  </span>
+                  <div style={{ position:'relative', zIndex:2, display:'flex', flexDirection:'column', alignItems:'center', gap:8 }}>
+                    <span className={`badge ${statusClass(p.status)}`}>
+                      <span className="badge-dot" /> {p.status}
+                    </span>
+                  </div>
+                  <div className="project-overlay">
+                    <div className="project-view-btn">VIEW</div>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
-          <div className="about-photo">
-            {hasPhoto
-              ? <img src="/avatar.jpg" alt="Ali Tayyab" />
-              : <span className="about-photo-init">AT</span>
-            }
-          </div>
-        </div>
-        {/* Timeline */}
-        <div style={{marginTop:72}}>
-          <span className="eyebrow">Experience</span>
-          <div style={{marginTop:0}}>
-            {TIMELINE.map(t=>(
-              <div key={t.role} className="tl-item">
-                <div>
-                  <div className="tl-role">{t.role}</div>
-                  <div className="tl-co">{t.co}</div>
+                <div className="project-card-body">
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+                    <span className="project-name">{p.title}</span>
+                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:'var(--text-muted)' }}>{p.year}</span>
+                  </div>
+                  <p className="project-desc">{p.description}</p>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginBottom:12 }}>
+                    {p.techStack.slice(0,4).map(t => <span key={t} className="tech-tag">{t}</span>)}
+                  </div>
+                  <div style={{ display:'flex', gap:12, justifyContent:'flex-end' }}>
+                    {p.liveUrl && (
+                      <a href={p.liveUrl} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()}
+                        style={{ color:'var(--text-muted)', transition:'color 0.15s', display:'flex', alignItems:'center', gap:4, fontSize:'var(--text-xs)', fontFamily:"'JetBrains Mono',monospace" }}
+                        onMouseEnter={e=>(e.currentTarget.style.color='var(--accent-green)')}
+                        onMouseLeave={e=>(e.currentTarget.style.color='var(--text-muted)')}>
+                        <ExternalLink size={12} /> Live
+                      </a>
+                    )}
+                    <a href={p.githubUrl} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()}
+                      style={{ color:'var(--text-muted)', transition:'color 0.15s', display:'flex', alignItems:'center', gap:4, fontSize:'var(--text-xs)', fontFamily:"'JetBrains Mono',monospace" }}
+                      onMouseEnter={e=>(e.currentTarget.style.color='var(--text-primary)')}
+                      onMouseLeave={e=>(e.currentTarget.style.color='var(--text-muted)')}>
+                      <Github size={12} /> GitHub
+                    </a>
+                  </div>
                 </div>
-                <div className="tl-yr">{t.yr}</div>
               </div>
-            ))}
-          </div>
-        </div>
+            </Link>
+          </SectionReveal>
+        ))}
       </div>
+
+      <SectionReveal delay={400}>
+        <div style={{ textAlign:'center', marginTop:48 }}>
+          <Link href="/projects" className="btn-ghost" data-cursor="link">
+            View all projects <ArrowRight size={15} />
+          </Link>
+        </div>
+      </SectionReveal>
     </section>
   );
 }
 
 /* ══ SKILLS ══ */
+const SKILLS: Record<string,string[]> = {
+  'Languages':    ['Python','JavaScript','TypeScript','HTML/CSS'],
+  'Frontend':     ['Next.js','React','React Native','Tailwind CSS'],
+  'Backend':      ['Supabase','Node.js','REST APIs'],
+  'AI & Tools':   ['Gemini API','Claude API','n8n','Vercel'],
+  'Design':       ['Figma','CapCut','Adobe Express'],
+};
+
 function Skills() {
   return (
-    <section id="skills" style={{borderTop:"1px solid var(--border)"}}>
-      <div className="wrap">
-        <span className="eyebrow">Skills</span>
-        <h2 style={{fontFamily:"'Instrument Serif',serif",fontSize:"clamp(32px,4vw,52px)",fontWeight:400,letterSpacing:"-0.025em",color:"var(--ink)",marginBottom:12,lineHeight:1.1}}>
-          Everything your product<br /><em style={{fontStyle:"italic"}}>needs to ship right</em>
-        </h2>
-        <p style={{fontSize:"0.9rem",color:"var(--ink3)",marginBottom:48,maxWidth:480}}>
-          Full-stack from idea to deployment — with AI baked in everywhere that matters.
-        </p>
-      </div>
-      <div className="skills-scroll-wrap" style={{paddingBottom:8}}>
-        <div className="skills-scroll">
-          {ALL_SKILLS.map((s,i) => <span key={i} className="s-chip">{s}</span>)}
-        </div>
-      </div>
+    <section id="skills" style={{ padding:'100px 40px', maxWidth:1100, margin:'0 auto', borderTop:'1px solid var(--border-subtle)' }}>
+      <SectionReveal><p className="section-label">// SKILLS</p></SectionReveal>
+      <SectionReveal delay={80}>
+        <h2 className="section-heading">What I <span className="grad">work with</span></h2>
+      </SectionReveal>
+      <SectionReveal delay={140}>
+        <p style={{ fontSize:'var(--text-base)', color:'var(--text-muted)', marginBottom:48 }}>Full-stack from idea to deployment — AI baked in everywhere that matters.</p>
+      </SectionReveal>
 
-      {/* Process steps */}
-      <div className="wrap" style={{marginTop:64}}>
-        <span className="eyebrow">How I work</span>
-        <h2 style={{fontFamily:"'Instrument Serif',serif",fontSize:"clamp(28px,3.5vw,44px)",fontWeight:400,letterSpacing:"-0.025em",color:"var(--ink)",marginBottom:40,lineHeight:1.1}}>
-          Three steps to your<br /><em style={{fontStyle:"italic"}}>next project.</em>
-        </h2>
-        <div className="steps-grid">
-          {[
-            { n:"01", title:"We discuss the idea", desc:"A casual conversation about what you want to build, the scope, timeline, and what success looks like. No pressure, no jargon." },
-            { n:"02", title:"I scope and build", desc:"I define the tech stack, break it into milestones, and start building. You get updates at every stage — no black boxes." },
-            { n:"03", title:"We ship and iterate", desc:"Launch is just the beginning. I stay involved post-launch to fix bugs, improve UX, and add features as the product grows." },
-          ].map(s=>(
-            <div key={s.n} className="step-card">
-              <span className="step-num">{s.n}</span>
-              <div className="step-title">{s.title}</div>
-              <div className="step-desc">{s.desc}</div>
+      <div style={{ display:'flex', flexDirection:'column', gap:32 }}>
+        {Object.entries(SKILLS).map(([cat, items], ci) => (
+          <div key={cat}>
+            <SectionReveal delay={ci * 40}>
+              <p style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, fontWeight:700, color:'var(--text-muted)', letterSpacing:'0.2em', textTransform:'uppercase', marginBottom:12 }}>{cat}</p>
+            </SectionReveal>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+              {items.map((s, si) => (
+                <SectionReveal key={s} delay={ci * 40 + si * 40}>
+                  <span className="skill-chip">{s}</span>
+                </SectionReveal>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ══ CURRENTLY BUILDING ══ */
-function Building() {
-  return (
-    <section style={{borderTop:"1px solid var(--border)"}}>
-      <div className="wrap">
-        <span className="eyebrow">Currently building</span>
-        <h2 style={{fontFamily:"'Instrument Serif',serif",fontSize:"clamp(32px,4vw,52px)",fontWeight:400,letterSpacing:"-0.025em",color:"var(--ink)",marginBottom:12,lineHeight:1.1}}>
-          What I&apos;m working on <em style={{fontStyle:"italic"}}>right now.</em>
-        </h2>
-        <p style={{fontSize:"0.9rem",color:"var(--ink3)",marginBottom:48}}>
-          Real-time snapshot of my focus. Updated as projects evolve.
-        </p>
-        <div className="building-grid">
-          {BUILDING.map(b=>(
-            <div key={b.title} className="building-card">
-              <div className="building-icon">{b.icon}</div>
-              <div className="building-title">{b.title}</div>
-              <div className="building-desc">{b.desc}</div>
-              <div className="building-status">
-                <span className="building-status-dot" />
-                {b.status}
-              </div>
-            </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </section>
   );
 }
 
 /* ══ GITHUB ══ */
-function Github() {
-  const [user, setUser]   = useState<GHUser|null>(null);
-  const [repos,setRepos]  = useState<GHRepo[]>([]);
-  const [err,  setErr]    = useState(false);
-  const [loading,setLoad] = useState(true);
+type GHUser = { login:string; avatar_url:string; bio:string|null; followers:number; public_repos:number; following:number; html_url:string; };
+type GHRepo = { id:number; name:string; description:string|null; language:string|null; stargazers_count:number; forks_count:number; updated_at:string; html_url:string; };
+const LANG_COLORS: Record<string,string> = { TypeScript:'#3178c6',JavaScript:'#f0db4f',Python:'#4B8BBE',CSS:'#7b5ea7',HTML:'#e44d26' };
+
+function GithubSection() {
+  const [user,  setUser]    = useState<GHUser|null>(null);
+  const [repos, setRepos]   = useState<GHRepo[]>([]);
+  const [err,   setErr]     = useState(false);
+  const [loading,setLoad]   = useState(true);
+  const GH = 'Ali2191';
+
   useEffect(() => {
     Promise.all([
-      fetch(`https://api.github.com/users/${GH}`).then(r=>{if(!r.ok)throw 0;return r.json()}),
-      fetch(`https://api.github.com/users/${GH}/repos?sort=updated&per_page=4`).then(r=>{if(!r.ok)throw 0;return r.json()}),
-    ]).then(([u,r])=>{setUser(u);setRepos(Array.isArray(r)?r.slice(0,4):[])})
-      .catch(()=>setErr(true)).finally(()=>setLoad(false));
-  },[]);
+      fetch(`https://api.github.com/users/${GH}`).then(r=>{ if(!r.ok) throw 0; return r.json(); }),
+      fetch(`https://api.github.com/users/${GH}/repos?sort=updated&per_page=4`).then(r=>{ if(!r.ok) throw 0; return r.json(); }),
+    ]).then(([u,r]) => { setUser(u); setRepos(Array.isArray(r)?r.slice(0,4):[]); })
+      .catch(() => setErr(true))
+      .finally(() => setLoad(false));
+  }, []);
+
   return (
-    <section style={{borderTop:"1px solid var(--border)"}}>
-      <div className="wrap">
-        <span className="eyebrow">GitHub</span>
-        <h2 style={{fontFamily:"'Instrument Serif',serif",fontSize:"clamp(32px,4vw,52px)",fontWeight:400,letterSpacing:"-0.025em",color:"var(--ink)",marginBottom:40,lineHeight:1.1}}>
-          Recent <em style={{fontStyle:"italic"}}>activity.</em>
-        </h2>
-        {err && <p style={{color:"var(--ink3)",fontSize:"0.9rem",fontFamily:"'Geist Mono',monospace"}}>Rate limited. <a href={`https://github.com/${GH}`} target="_blank" rel="noopener noreferrer" style={{color:"var(--ink)"}}>View on GitHub →</a></p>}
-        {loading && !err && (
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-            {[0,1,2,3].map(i=><div key={i} style={{height:110,borderRadius:12,background:"var(--bg2)",border:"1px solid var(--border)",animation:"pulse 1.8s ease-in-out infinite",animationDelay:`${i*.15}s`}}/>)}
+    <section id="github" style={{ padding:'100px 40px', maxWidth:1100, margin:'0 auto', borderTop:'1px solid var(--border-subtle)' }}>
+      <SectionReveal><p className="section-label">// OPEN SOURCE</p></SectionReveal>
+      <SectionReveal delay={80}>
+        <h2 className="section-heading">What I&apos;m <span className="grad">building</span></h2>
+      </SectionReveal>
+
+      {err && (
+        <div style={{ padding:'20px 24px', background:'var(--bg-surface)', border:'1px solid var(--border-subtle)', borderRadius:12, fontFamily:"'JetBrains Mono',monospace", fontSize:'var(--text-xs)', color:'var(--text-muted)', marginTop:40 }}>
+          GitHub data temporarily unavailable. <a href={`https://github.com/${GH}`} target="_blank" rel="noopener noreferrer" style={{ color:'var(--accent-glow)' }}>View profile directly →</a>
+        </div>
+      )}
+
+      {loading && !err && (
+        <div style={{ marginTop:40 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 2fr', gap:24 }}>
+            <div className="skeleton" style={{ height:200 }} />
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+              {[0,1,2,3].map(i => <div key={i} className="skeleton" style={{ height:90 }} />)}
+            </div>
           </div>
-        )}
-        {!loading && !err && (
-          <>
+        </div>
+      )}
+
+      {!loading && !err && (
+        <SectionReveal delay={160}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 2fr', gap:24, marginTop:40, alignItems:'start' }}>
+            {/* Profile */}
             {user && (
-              <div style={{display:"flex",alignItems:"center",gap:16,padding:"20px 24px",background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:14,marginBottom:20,flexWrap:"wrap"}}>
+              <div style={{ background:'var(--bg-surface)', border:'1px solid var(--border-subtle)', borderRadius:14, padding:24 }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={user.avatar_url} alt={user.login} style={{width:52,height:52,borderRadius:"50%",border:"1px solid var(--border2)",objectFit:"cover"}}/>
-                <div style={{flex:1}}>
-                  <div style={{fontWeight:600,fontSize:"0.95rem",color:"var(--ink)"}}>{user.login}</div>
-                  {user.bio && <div style={{fontSize:"0.8rem",color:"var(--ink3)",marginTop:2}}>{user.bio}</div>}
-                  <div style={{display:"flex",gap:16,marginTop:4}}>
-                    <span style={{fontFamily:"'Geist Mono',monospace",fontSize:"0.7rem",color:"var(--ink4)"}}>{user.followers} followers</span>
-                    <span style={{fontFamily:"'Geist Mono',monospace",fontSize:"0.7rem",color:"var(--ink4)"}}>{user.public_repos} repos</span>
-                  </div>
-                </div>
-                <a href={user.html_url} target="_blank" rel="noopener noreferrer" className="btn btn-light" style={{fontSize:"0.8rem",padding:"8px 18px"}}>View Profile ↗</a>
-              </div>
-            )}
-            {repos.length>0 && (
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                {repos.map(r=>(
-                  <a key={r.id} href={r.html_url} target="_blank" rel="noopener noreferrer"
-                     style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:12,padding:20,textDecoration:"none",display:"block",transition:"border-color .2s,background .2s"}}
-                     onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.borderColor="var(--border2)";(e.currentTarget as HTMLElement).style.background="var(--bg3)"}}
-                     onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor="var(--border)";(e.currentTarget as HTMLElement).style.background="var(--bg2)"}}>
-                    <div style={{fontWeight:600,fontSize:"0.88rem",color:"var(--ink)",marginBottom:5}}>{r.name}</div>
-                    {r.description && <div style={{fontSize:"0.78rem",color:"var(--ink3)",lineHeight:1.6,marginBottom:10}}>{r.description}</div>}
-                    <div style={{display:"flex",gap:12,fontFamily:"'Geist Mono',monospace",fontSize:"0.65rem",color:"var(--ink4)",flexWrap:"wrap"}}>
-                      {r.language && <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:7,height:7,borderRadius:"50%",background:LANG_COLORS[r.language]||"#888",display:"inline-block"}}/>{r.language}</span>}
-                      <span>★ {r.stargazers_count}</span>
-                      <span>{new Date(r.updated_at).toLocaleDateString("en-US",{month:"short",year:"numeric"})}</span>
+                <img src={user.avatar_url} alt={user.login} style={{ width:80, height:80, borderRadius:'50%', border:'2px solid var(--border-subtle)', objectFit:'cover', marginBottom:14, display:'block' }} />
+                <div style={{ fontFamily:"'Geist',sans-serif", fontWeight:700, fontSize:'var(--text-lg)', color:'var(--text-primary)', marginBottom:4 }}>{user.login}</div>
+                {user.bio && <div style={{ fontSize:'var(--text-sm)', color:'var(--text-secondary)', marginBottom:14, lineHeight:1.6 }}>{user.bio}</div>}
+                <div style={{ display:'flex', gap:0, marginBottom:20, borderTop:'1px solid var(--border-subtle)', borderBottom:'1px solid var(--border-subtle)', padding:'12px 0' }}>
+                  {[
+                    { n: user.public_repos, l: 'Repos' },
+                    { n: user.followers,    l: 'Followers' },
+                    { n: user.following,    l: 'Following' },
+                  ].map(s => (
+                    <div key={s.l} className="gh-stat">
+                      <span className="gh-stat-num">{s.n}</span>
+                      <span className="gh-stat-label">{s.l}</span>
                     </div>
-                  </a>
-                ))}
+                  ))}
+                </div>
+                <a href={user.html_url} target="_blank" rel="noopener noreferrer" className="btn-ghost" style={{ width:'100%', justifyContent:'center', fontSize:'var(--text-sm)' }} data-cursor="link">
+                  <Github size={14} /> View Profile
+                </a>
               </div>
             )}
-          </>
-        )}
-      </div>
+            {/* Repos */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+              {repos.map(r => (
+                <a key={r.id} href={r.html_url} target="_blank" rel="noopener noreferrer" className="repo-card" data-cursor="link">
+                  <div className="repo-name">{r.name}</div>
+                  {r.description && <p className="repo-desc">{r.description}</p>}
+                  <div className="repo-meta">
+                    {r.language && (
+                      <span className="repo-meta-item">
+                        <span className="lang-dot" style={{ background: LANG_COLORS[r.language] || '#888' }} />
+                        {r.language}
+                      </span>
+                    )}
+                    <span className="repo-meta-item"><Star size={11} />{r.stargazers_count}</span>
+                    <span className="repo-meta-item"><GitFork size={11} />{r.forks_count}</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </SectionReveal>
+      )}
     </section>
   );
 }
 
-/* ══ FAQ ══ */
-function FAQ() {
-  const [open, setOpen] = useState<number|null>(null);
+/* ══ CONTACT PREVIEW ══ */
+function ContactPreview() {
   return (
-    <div className="faq-list">
-      {FAQS.map((f,i)=>(
-        <div key={i} className={`faq-item ${open===i?"open":""}`} onClick={()=>setOpen(open===i?null:i)}>
-          <div className="faq-q">
-            <span>{f.q}</span>
-            <span className="faq-icon">+</span>
-          </div>
-          <div className="faq-a">{f.a}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
+    <section id="contact" style={{ padding:'100px 40px', maxWidth:1100, margin:'0 auto', borderTop:'1px solid var(--border-subtle)', position:'relative' }}>
+      <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse 60% 60% at 50% 50%, rgba(124,58,237,0.05), transparent)', pointerEvents:'none' }} />
+      <SectionReveal><p className="section-label">// CONTACT</p></SectionReveal>
+      <SectionReveal delay={80}>
+        <h2 className="section-heading" style={{ marginBottom:0 }}>Let&apos;s build</h2>
+        <h2 className="section-heading" style={{ marginBottom:24 }}>
+          <span className="grad" style={{ marginLeft:'1.5rem' }}>something.</span>
+        </h2>
+      </SectionReveal>
+      <SectionReveal delay={160}>
+        <p style={{ fontSize:'var(--text-base)', color:'var(--text-secondary)', marginBottom:40, maxWidth:480 }}>
+          Open to opportunities, collaborations, and interesting problems. I reply fast.
+        </p>
+      </SectionReveal>
 
-/* ══ CONTACT ══ */
-function Contact() {
-  const [hasPhoto,setHasPhoto]=useState(false);
-  useEffect(()=>{const img=new Image();img.src="/avatar.jpg";img.onload=()=>setHasPhoto(true);},[]);
-  return (
-    <section id="contact" style={{borderTop:"1px solid var(--border)"}}>
-      <div className="wrap">
-        <div className="contact-split">
-          <div>
-            <span className="eyebrow">Contact</span>
-            <h2 className="contact-heading">
-              Have a project<br />in mind? Let&apos;s<br /><em>make it real.</em>
-            </h2>
-            <p className="contact-sub">
-              I&apos;m currently available for freelance projects and internships starting immediately. Whether you need a web app, an AI integration, or a full product build — let&apos;s talk.
-            </p>
-            <div className="contact-ctas">
-              <a href="mailto:hello@alitayyab.dev" className="btn btn-dark">✉ Send an email</a>
-              <a href="https://github.com/Ali2191" target="_blank" rel="noopener noreferrer" className="btn btn-light">GitHub ↗</a>
+      <SectionReveal delay={240}>
+        <div style={{ display:'flex', gap:12, flexWrap:'wrap', marginBottom:40 }}>
+          <a href="mailto:hello@alitayyab.dev" className="contact-tile" data-cursor="link">
+            <div className="contact-tile-icon">✉</div>
+            <div>
+              <div className="contact-tile-label">Email</div>
+              <div className="contact-tile-value">hello@alitayyab.dev</div>
             </div>
-            <div className="contact-meta">
-              <div className="contact-meta-item"><strong>Email:</strong> hello@alitayyab.dev</div>
-              <div className="contact-meta-item"><strong>Based in:</strong> Kot Addu, Pakistan</div>
-              <div className="contact-meta-item"><strong>Available for:</strong> Freelance · Remote Internships · Full-Time</div>
+          </a>
+          <a href="https://linkedin.com/in/alitayyab" target="_blank" rel="noopener noreferrer" className="contact-tile" data-cursor="link">
+            <div className="contact-tile-icon"><Linkedin size={20} /></div>
+            <div>
+              <div className="contact-tile-label">LinkedIn</div>
+              <div className="contact-tile-value">Ali Tayyab</div>
             </div>
-          </div>
-          <div>
-            <FAQ />
-          </div>
+          </a>
         </div>
-      </div>
+      </SectionReveal>
+
+      <SectionReveal delay={320}>
+        <Link href="/contact" data-cursor="link" style={{ display:'inline-flex', alignItems:'center', gap:8, color:'var(--text-muted)', fontFamily:"'JetBrains Mono',monospace", fontSize:'var(--text-xs)', textDecoration:'none', letterSpacing:'0.06em', transition:'color 0.2s' }}
+          onMouseEnter={e=>(e.currentTarget.style.color='var(--accent-glow)')}
+          onMouseLeave={e=>(e.currentTarget.style.color='var(--text-muted)')}>
+          See the full contact page → /contact
+        </Link>
+      </SectionReveal>
     </section>
   );
 }
@@ -494,62 +447,27 @@ function Footer() {
   return (
     <footer className="footer">
       <div className="footer-inner">
-        <div>
-          <div className="footer-email">hello@alitayyab.dev</div>
-          <div className="footer-loc">Based in Kot Addu, Pakistan</div>
-          <div className="footer-avail">Available for: Freelance · Remote · Internships</div>
+        <span className="footer-copy">© 2025 Ali Tayyab — Built with Next.js & Deployed on Vercel</span>
+        <div className="footer-links">
+          <a href="https://github.com/Ali2191" target="_blank" rel="noopener noreferrer" data-cursor="link"><Github size={14} /></a>
+          <a href="https://linkedin.com/in/alitayyab" target="_blank" rel="noopener noreferrer" data-cursor="link"><Linkedin size={14} /></a>
+          <a href="mailto:hello@alitayyab.dev" data-cursor="link"><Mail size={14} /></a>
         </div>
-        <div>
-          <div className="footer-col-title">Pages</div>
-          <a href="#hero" className="footer-link">Home</a>
-          <a href="#about" className="footer-link">About</a>
-          <a href="#projects" className="footer-link">Projects</a>
-          <a href="#skills" className="footer-link">Skills</a>
-        </div>
-        <div>
-          <div className="footer-col-title">Connect</div>
-          <a href="https://github.com/Ali2191" target="_blank" rel="noopener noreferrer" className="footer-link">GitHub</a>
-          <a href="https://linkedin.com/in/alitayyab" target="_blank" rel="noopener noreferrer" className="footer-link">LinkedIn</a>
-          <a href="mailto:hello@alitayyab.dev" className="footer-link">Email</a>
-        </div>
-      </div>
-      <div className="footer-bottom">
-        <span className="footer-copy">© 2025 Ali Tayyab. All rights reserved.</span>
-        <span className="footer-copy">Built with Next.js · Deployed on Vercel</span>
       </div>
     </footer>
   );
 }
 
-/* ══ ACTIVE SECTION ══ */
-function useActive() {
-  const [active,setActive]=useState("hero");
-  useEffect(()=>{
-    const ids=["hero","projects","about","skills","contact"];
-    const obs=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)setActive(e.target.id);}),{threshold:0.3});
-    ids.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el);});
-    return ()=>obs.disconnect();
-  },[]);
-  return active;
-}
-
 /* ══ PAGE ══ */
-export default function Page() {
-  const active = useActive();
-  const { dark, toggle } = useTheme();
+export default function Home() {
   return (
     <>
-      <Cursor />
-      <Nav active={active} dark={dark} onToggle={toggle} />
-      <main>
-        <Hero />
-        <Projects />
-        <About />
-        <Building />
-        <Skills />
-        <Github />
-        <Contact />
-      </main>
+      <Hero />
+      <AboutPreview />
+      <ProjectsPreview />
+      <Skills />
+      <GithubSection />
+      <ContactPreview />
       <Footer />
     </>
   );
